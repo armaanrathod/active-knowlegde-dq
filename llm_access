@@ -1,0 +1,76 @@
+from flask import Flask, request, Response, render_template_string
+import requests
+
+app = Flask(__name__)
+
+OLLAMA_API = "http://localhost:11434/api/generate"
+
+# Simple HTML front end
+HTML_PAGE = """
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ollama Chat</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    #chat { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; }
+    #inputBox { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Ollama Chat</h1>
+  <div id="chat"></div>
+  <div id="inputBox">
+    <input id="msg" type="text" style="width:80%" placeholder="Type your message...">
+    <button onclick="sendMsg()">Send</button>
+  </div>
+
+  <script>
+    async function sendMsg() {
+      const msg = document.getElementById("msg").value;
+      document.getElementById("chat").innerHTML += "<p><b>You:</b> " + msg + "</p>";
+      document.getElementById("msg").value = "";
+
+      const response = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ msg })
+      });
+
+      const reader = response.body.getReader();
+      let decoder = new TextDecoder();
+      let aiReply = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        aiReply += decoder.decode(value, { stream: true });
+        document.getElementById("chat").innerHTML = document.getElementById("chat").innerHTML.replace(/<p><b>AI:<\/b>.*?<\/p>/, "");
+        document.getElementById("chat").innerHTML += "<p><b>AI:</b> " + aiReply + "</p>";
+      }
+    }
+  </script>
+</body>
+</html>
+"""
+
+@app.route("/")
+def home():
+    return render_template_string(HTML_PAGE)
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.json
+    user_msg = data["msg"]
+
+    def stream():
+        payload = {"model": "phi3", "prompt": user_msg}
+        r = requests.post(OLLAMA_API, json=payload, stream=True)
+        for line in r.iter_lines():
+            if line:
+                yield line.decode("utf-8").split('"response":"')[-1].split('"')[0]
+
+    return Response(stream(), mimetype="text/plain")
+
+if __name__ == "__main__":
+    app.run(port=5000, debug=True)
