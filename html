@@ -144,11 +144,47 @@
       -webkit-backdrop-filter: blur(12px);
       color: inherit;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      text-align: left;
     }
     .dark-mode #script-box {
       background: rgba(0, 0, 0, 0.25);
       border: 1px solid rgba(255, 255, 255, 0.2);
       color: #f1f1f1;
+    }
+
+    /* User Questions Section */
+    #user-questions-container {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .dark-mode #user-questions-container {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .question {
+      margin: 15px 0;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .question-buttons {
+      margin-top: 10px;
+    }
+
+    #status-display {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      font-size: 14px;
     }
 
     #user-opinion-container {
@@ -197,7 +233,7 @@
     <div id="pdf-name"></div>
     <!-- Generate Debate button -->
     <br>
-    <button id="generate-btn">Generate Debate</button>
+    <button id="generate-btn">Start Debate</button>
   </div>
 
   <!-- Debate Section -->
@@ -205,6 +241,17 @@
     <div id="person-left" style="background-image:url('person1.jpg');"></div>
     <div id="script-box">Debate will appear here...</div>
     <div id="person-right" style="background-image:url('person2.jpg');"></div>
+  </div>
+
+  <!-- User Questions Section -->
+  <div id="user-questions-container">
+    <h3>Continue Debate?</h3>
+    <div id="questions-list"></div>
+    <div id="status-display"></div>
+    <div style="margin-top: 20px;">
+      <button id="continue-yes-btn">Yes, Continue</button>
+      <button id="continue-no-btn">No, End Debate</button>
+    </div>
   </div>
 
   <!-- User opinion + toggle -->
@@ -228,7 +275,14 @@
     const forAgainstToggle = document.getElementById("for-against-toggle");
     const userOpinionContainer = document.getElementById("user-opinion-container");
     const userOpinion = document.getElementById("user-opinion");
+    const userQuestionsContainer = document.getElementById("user-questions-container");
+    const questionsList = document.getElementById("questions-list");
+    const statusDisplay = document.getElementById("status-display");
+    const continueYesBtn = document.getElementById("continue-yes-btn");
+    const continueNoBtn = document.getElementById("continue-no-btn");
+    
     let currentSide = "For";
+    let debateActive = false;
 
     // PDF upload logic
     pdfUpload.addEventListener("change", async (e) => {
@@ -267,26 +321,157 @@
       }
     });
 
-    // Generate debate
-    generateBtn.addEventListener("click", () => {
+    // Start debate
+    generateBtn.addEventListener("click", async () => {
+      const articleText = textarea.value.trim();
+      if (!articleText) {
+        alert("Please enter article text first!");
+        return;
+      }
+
+      // Hide input elements
       pdfUpload.style.display = "none";
       textarea.style.display = "none";
       pdfName.style.display = "none";
       generateBtn.style.display = "none";
 
       mainFrame.classList.add("active");
-
       debateContainer.style.display = "flex";
-      userOpinionContainer.style.display = "flex";
+      
+      scriptBox.innerHTML = "Generating debate...";
+      
+      try {
+        const response = await fetch("http://localhost:5000/start_debate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ article: articleText })
+        });
 
-      scriptBox.textContent = `${currentSide} argument will appear here based on the article.`;
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let result = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          result += decoder.decode(value, { stream: true });
+          scriptBox.innerHTML = result.replace(/\n/g, '<br>');
+          scriptBox.scrollTop = scriptBox.scrollHeight;
+        }
+
+        debateActive = true;
+        // Show user questions after initial debate
+        setTimeout(() => showUserQuestions(), 2000);
+
+      } catch (error) {
+        scriptBox.innerHTML = `Error: ${error.message}`;
+      }
+    });
+
+    // Show user questions
+    async function showUserQuestions() {
+      try {
+        const response = await fetch("http://localhost:5000/get_user_questions");
+        const data = await response.json();
+        
+        if (data.below_threshold) {
+          userQuestionsContainer.style.display = "block";
+          questionsList.innerHTML = `
+            <div class="question">
+              <p><strong>Debate Complete!</strong></p>
+              <p>The debate has reached the relevance threshold (${data.current_relevance.toFixed(1)}% relevance).</p>
+              <p>Total rounds completed: ${data.round_count}</p>
+            </div>
+          `;
+          continueYesBtn.style.display = "none";
+          continueNoBtn.textContent = "Close";
+          return;
+        }
+
+        userQuestionsContainer.style.display = "block";
+        
+        let questionsHtml = "";
+        data.questions.forEach((question, index) => {
+          questionsHtml += `
+            <div class="question">
+              <p><strong>Question ${index + 1}:</strong> ${question}</p>
+            </div>
+          `;
+        });
+        
+        questionsList.innerHTML = questionsHtml;
+        statusDisplay.innerHTML = `
+          <p><strong>Status:</strong> Round ${data.round_count} | Relevance: ${data.current_relevance.toFixed(1)}%</p>
+        `;
+
+      } catch (error) {
+        console.error("Error fetching questions:", error);
+      }
+    }
+
+    // Continue debate
+    continueYesBtn.addEventListener("click", async () => {
+      userQuestionsContainer.style.display = "none";
+      scriptBox.innerHTML += "<br><br>Generating additional arguments...";
+      
+      try {
+        const response = await fetch("http://localhost:5000/continue_debate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ side: currentSide })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        
+        if (contentType && contentType.includes("application/json")) {
+          // Handle JSON response (threshold reached)
+          const data = await response.json();
+          scriptBox.innerHTML += `<br><br><strong>${data.message}</strong><br>Final Relevance: ${data.final_relevance.toFixed(1)}%<br>Total Rounds: ${data.total_rounds}`;
+          debateActive = false;
+        } else {
+          // Handle streaming response
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let result = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            result += decoder.decode(value, { stream: true });
+            scriptBox.innerHTML = scriptBox.innerHTML.replace("Generating additional arguments...", "") + "<br><br>" + result.replace(/\n/g, '<br>');
+            scriptBox.scrollTop = scriptBox.scrollHeight;
+          }
+
+          // Show questions again for next round
+          setTimeout(() => showUserQuestions(), 2000);
+        }
+
+      } catch (error) {
+        scriptBox.innerHTML += `<br><br>Error: ${error.message}`;
+      }
+    });
+
+    // End debate
+    continueNoBtn.addEventListener("click", () => {
+      userQuestionsContainer.style.display = "none";
+      if (debateActive) {
+        scriptBox.innerHTML += "<br><br><strong>Debate ended by user.</strong>";
+        debateActive = false;
+      }
     });
 
     // Toggle For/Against
     forAgainstToggle.addEventListener("click", () => {
       currentSide = currentSide === "For" ? "Against" : "For";
       forAgainstToggle.textContent = currentSide;
-      scriptBox.textContent = `${currentSide} argument will appear here based on the article.`;
     });
   </script>
 </body>
