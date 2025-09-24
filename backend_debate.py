@@ -1,138 +1,95 @@
-# backend_debate.py
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-import nltk
-from nltk.corpus import stopwords
-import string
+import requests
+import json
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
-# ------------------------
-# NLTK Setup
-# ------------------------
-nltk.download("punkt")
-nltk.download("averaged_perceptron_tagger")
-nltk.download("stopwords")
-stop_words = set(stopwords.words("english"))
+# --- Configuration ---
+OLLAMA_API = "http://localhost:11434/api/generate"  # Ollama endpoint
+OLLAMA_MODEL = "phi3"  # Ollama model
 
-# ------------------------
-# FastAPI App
-# ------------------------
-app = FastAPI(
-    title="Article → Live Debate API",
-    description="Turns any passage into a live debate with Pro/Con arguments.",
-    version="1.0.0"
-)
+app = Flask(__name__)
+CORS(app)
 
-# ------------------------
-# Request/Response Models
-# ------------------------
-class DebateRequest(BaseModel):
-    text: str
-    max_points: int = 15   # default 15, can go up to 20 or more
-
-class DebateResponse(BaseModel):
-    key_points: list[str]
-    debate: list[dict]
-
-# ------------------------
-# Determine if a point is debatable
-# ------------------------
-def is_debatable(point: str) -> bool:
+# --- Prompt helper ---
+def create_debate_prompt(article_text, side="For", first_turn=False):
     """
-    Returns True if a point is debatable, False if factual.
+    Creates a prompt for AI.
+    - first_turn=True: generate initial debate (For/Against)
+    - first_turn=False: continue debate with conversation history
     """
-    debatable_keywords = ["should", "might", "complex", "issue", "problem", "benefit", "impact"]
+    if first_turn:
+        return f"""
+You are a debate generator AI.
 
-    # Numeric facts are not debatable
-    if any(char.isdigit() for char in point):
-        return False
+Read the article below and extract 3-4 debatable key claims.
 
-    # Debatable if keyword present
-    for kw in debatable_keywords:
-        if kw in point.lower():
-            return True
+Then generate both sides in a short debate (2 exchanges, max 3 sentences each):
 
-    # Short noun phrases are usually factual
-    if len(point.split()) <= 3:
-        return False
+Key Claims:
+1. [Claim 1]
+2. [Claim 2]
+3. [Claim 3]
 
-    return True
+Debate:
+Persona A (For): [Opening statement]
+Persona B (Against): [Counter-argument]
+Persona A (For): [Rebuttal]
+Persona B (Against): [Final counter-rebuttal]
 
-# ------------------------
-# Extract Key Points Logic (Improved Readability)
-# ------------------------
-def extract_key_points(text: str, max_points: int = 20):
-    """
-    Extract key points from text with improved readability:
-    - Prioritize nouns & proper nouns
-    - Merge short factual points with surrounding context
-    - Skip stopwords/punctuation
-    - Fallback to full sentence if needed
-    """
-    sentences = nltk.sent_tokenize(text)
-    key_points = []
+Article:
+{article_text}
+"""
+    else:
+        return f"""
+You are a debate generator AI. Continue the debate based on the conversation:
 
-    for sent in sentences:
-        words = nltk.word_tokenize(sent)
-        tagged = nltk.pos_tag(words)
+Conversation so far:
+{article_text}
 
-        nouns = [
-            word for word, pos in tagged
-            if pos.startswith("NN") and word.lower() not in stop_words and word not in string.punctuation
-        ]
+Your task:
+- Argue for the side: {side}
+- Limit your response to max 3 sentences
+- If no meaningful points are left, respond: "No further arguments."
 
-        if nouns:
-            point = " ".join(nouns)
-            # Improve readability for short factual points
-            if len(point.split()) <= 3 and not is_debatable(point):
-                # Grab first 6-8 words from sentence for context
-                point = " ".join(words[:8])
-            key_points.append(point)
-        else:
-            trimmed = sent.strip()
-            if trimmed:
-                key_points.append(trimmed)
+Output ONLY your response.
+"""
 
-    # Remove duplicates while keeping order
-    seen = set()
-    unique_points = []
-    for point in key_points:
-        if point not in seen:
-            seen.add(point)
-            unique_points.append(point)
+# --- Routes ---
+@app.route("/generate_debate", methods=["POST"])
+def generate_debate():
+    data = request.json
+    article = data.get("article", "").strip()
+    side = data.get("side", "For")
+    first_turn = data.get("first_turn", False)
 
-    return unique_points[:max_points] if unique_points else ["General discussion point"]
+    if not article:
+        return jsonify({"error": "No article text provided"}), 400
 
-# ------------------------
-# Debate Generator
-# ------------------------
-def debate_on_points(points):
-    debate = []
-    for point in points:
-        if is_debatable(point):
-            pro = f"✅ Pro: The point '{point}' has arguments in its favor."
-            con = f"❌ Con: The point '{point}' can be challenged or analyzed differently."
-            debate.append({"point": point, "pro": pro, "con": con})
-        else:
-            debate.append({"point": point, "pro": "ℹ️ Fact: Not debatable", "con": "ℹ️ Fact: Not debatable"})
-    return debate
+    prompt = create_debate_prompt(article, side, first_turn)
 
-# ------------------------
-# Routes
-# ------------------------
-@app.get("/status")
-async def status():
-    return {"status": "ok", "message": "Live Debate backend is running 🚀"}
+    def stream_response():
+        try:
+            payload = {
+                "model": OLLAMA_MODEL,
+                "prompt": prompt,
+                "stream": True
+            }
+            response = requests.post(OLLAMA_API, json=payload, stream=True)
+            response.raise_for_status()
 
-@app.post("/debate", response_model=DebateResponse)
-async def debate(request: DebateRequest):
-    if not request.text.strip():
-        return JSONResponse(
-            status_code=400,
-            content={"error": "No text provided. Please send valid text."}
-        )
+            for line in response.iter_lines():
+                if line:
+                    try:
+                        chunk = json.loads(line.decode("utf-8"))
+                        if "response" in chunk:
+                            yield chunk["response"]
+                    except json.JSONDecodeError:
+                        continue
+        except requests.RequestException as e:
+            yield f"Error connecting to Ollama: {e}"
 
-    key_points = extract_key_points(request.text, request.max_points)
-    debate_result = debate_on_points(key_points)
+    return app.response_class(stream_response(), mimetype="text/plain")
 
-    return DebateResponse(key_points=key_points, debate=debate_result)
+
+if __name__ == "__main__":
+    app.run(port=5000, debug=True)
