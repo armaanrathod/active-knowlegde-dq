@@ -1,6 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Image Flash Transition</title>
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+    background: url("images/FRONT FRONT.jpeg") no-repeat center center/cover;
+    background-size: cover;
+  }
+
+  /* Full screen flash overlay */
+  #flash {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, white, rgba(255,255,255,0));
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* Horizontal flash animation */
+  .flash-animate {
+    animation: flashMove 1.0s ease-in forwards;
+  }
+
+  @keyframes flashMove {
+    0% { left: -100%; opacity: 1; }
+    50% { left: 0%; opacity: 1; }
+    100% { left: 100%; opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="flash"></div>
+
+<!-- second page (verbatim) stored inertly here -->
+<template id="second-template">
+<!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AcaDeBot</title>
@@ -12,22 +58,17 @@
       transition: background-color 0.3s, color 0.3s;
       position: relative;
       text-align: center;
-      background-image: url("WhatsApp Image 2025-09-24 at 17.33.10 (1).jpeg");
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
     }
-    .light-mode {
-      color: #000;
-    }
-    .dark-mode {
-      color: #f1f1f1;
-    }
 
-    /* Glass frame */
+    .light-mode { color: #000; }
+    .dark-mode { color: #f1f1f1; }
+
     .frame {
       display: inline-block;
-      margin-top: 120px;  
+      margin-top: 120px;
       padding: 20px;
       border-radius: 20px;
       background: rgba(255, 255, 255, 0.15);
@@ -39,19 +80,7 @@
       position: relative;
       z-index: 2;
     }
-    .frame.active {
-      margin-top: 10px;
-      padding: 10px;
-      border: none;
-      background: none;
-      box-shadow: none;
-    }
-    .dark-mode .frame {
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
 
-    /* Glass textarea */
     textarea {
       width: 500px;
       height: 200px;
@@ -60,94 +89,80 @@
       padding: 10px;
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.3);
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.2);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      color: inherit;
+      color: #000;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
       resize: none;
     }
+
     .dark-mode textarea {
-      background: rgba(0, 0, 0, 0.25);
+      background: rgba(0, 0, 0, 0.3);
       border: 1px solid rgba(255, 255, 255, 0.2);
       color: #f1f1f1;
     }
 
-    /* Glass button */
     button {
       font-size: 16px;
       margin: 10px;
       padding: 10px 20px;
       cursor: pointer;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      background: rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      color: inherit;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-      transition: transform 0.2s ease, background 0.3s;
+      border: none;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.3);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: background-color 0.3s, color 0.3s;
     }
+
     button:hover {
-      transform: scale(1.05);
-      background: rgba(255, 255, 255, 0.3);
+      background: rgba(255,255,255,0.5);
     }
+
     .dark-mode button {
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(0,0,0,0.3);
       color: #f1f1f1;
     }
 
-    /* Theme panel glass */
-    #theme-panel {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      padding: 10px;
-      border-radius: 12px;
-      font-size: 14px;
-      z-index: 3;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-    }
-
-    /* Debate Section */
     #debate-container {
       display: flex;
       justify-content: center;
-      align-items: flex-start;
-      margin-top: 80px;
+      align-items: flex-end;
+      margin-top: 0;
       gap: 20px;
       display: none;
     }
+
     #person-left, #person-right {
-      width: 120px;
-      height: 250px;
-      background-size: cover;
+      width: 150px;
+      height: 280px;
+      background-size: contain;
+      background-repeat: no-repeat;
       background-position: center;
       border-radius: 10px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      margin-top: 20px;
     }
 
-    /* Glass script box */
     #script-box {
       width: 500px;
       height: 300px;
       border-radius: 12px;
-      padding: 10px;
-      overflow-y: auto;
-      background: rgba(255, 255, 255, 0.15);
       border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.2);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      color: inherit;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      color: #000;
+      padding: 10px;
+      overflow-y: auto;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      position: relative;
+      z-index: 2;
+      margin-top: -30px;
     }
+
     .dark-mode #script-box {
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(0,0,0,0.3);
       color: #f1f1f1;
     }
 
@@ -160,99 +175,250 @@
       display: none;
     }
 
-    /* Glass input */
+    #for-against-toggle {
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      height: 30px;
+    }
+
     #user-opinion {
       width: 300px;
       height: 30px;
       padding: 5px 10px;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(8px);
+    }
+
+    .dark-mode #user-opinion {
+      background: rgba(0,0,0,0.3);
+      color: #f1f1f1;
+      border: 1px solid #555;
+    }
+
+    #side-panel {
+      position: fixed;
+      top: 20px;
+      right: 0;
+      width: 180px;
+      height: 500px;
+      background: rgba(164, 134, 155, 0.35);
+      border-radius: 18px 0 0 18px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      transition: transform 0.4s ease;
+    }
+
+    #side-panel.collapsed {
+      transform: translateX(150px);
+    }
+
+    #side-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url("download__4_-removebg-preview.png") center/contain no-repeat;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+
+    #theme-panel {
+      background: transparent;
+      border: none;
+      text-align: center;
       font-size: 14px;
       color: inherit;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      z-index: 2;
     }
-    .dark-mode #user-opinion {
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+
+    #collapse-handle {
+      position: absolute;
+      left: -25px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 25px;
+      height: 80px;
+      background: rgba(255,255,255,0.4);
+      backdrop-filter: blur(8px);
+      border-radius: 8px 0 0 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 5;
+    }
+
+    .dark-mode #collapse-handle {
+      background: rgba(0,0,0,0.4);
+      color: #f1f1f1;
+    }
+
+    #view-toggle-panel {
+      margin-top: 20px;
+      text-align: center;
+      z-index: 2;
+    }
+
+    #view-toggle {
+      margin-top: 5px;
+    }
+
+    #view-image {
+      max-width: 100%;
+      height: auto;
+      margin-top: 10px;
+      border-radius: 8px;
+      transition: opacity 0.3s ease;
+    }
+
+    .debate-section {
+      margin-bottom: 15px;
+    }
+
+    .debate-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      padding: 5px;
+      border-radius: 5px;
+    }
+
+    .for-title { background: rgba(76, 175, 80, 0.3); }
+    .against-title { background: rgba(244, 67, 54, 0.3); }
+
+    .argument-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .argument-item {
+      background: rgba(255, 255, 255, 0.1);
+      margin: 5px 0;
+      padding: 8px;
+      border-radius: 6px;
+      border-left: 3px solid;
+    }
+
+    .for-argument { border-left-color: #4CAF50; }
+    .against-argument { border-left-color: #f44336; }
+
+    .debate-status {
+      text-align: center;
+      margin: 10px 0;
+      padding: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      font-size: 12px;
+    }
+
+    .loading {
+      text-align: center;
+      font-style: italic;
+      color: #666;
+    }
+
+    .dark-mode select {
+      background: rgba(0,0,0,0.3);
+      color: #f1f1f1;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .dark-mode .argument-item {
+      background: rgba(0,0,0,0.2);
+      color: #f1f1f1;
+    }
+
+    .dark-mode .debate-status {
+      background: rgba(0,0,0,0.2);
       color: #f1f1f1;
     }
   </style>
 </head>
 <body class="light-mode">
-  <!-- Theme Switch Panel -->
-  <div id="theme-panel">
-    <div>Theme:</div>
-    <button id="theme-toggle">🌞 Light</button>
+
+  <!-- Side Panel -->
+  <div id="side-panel">
+    <div id="collapse-handle">⮜</div>
+    <div id="theme-panel">
+      <div>Theme:</div>
+      <button id="theme-toggle">🌞 Light</button>
+    </div>
+    <div id="view-toggle-panel">
+      <div>View:</div>
+      <button id="view-toggle">🌍 Global</button>
+      <img id="view-image" src="download__4_-removebg-preview.png" alt="View Image">
+    </div>
   </div>
 
   <!-- Content inside frame -->
   <div class="frame" id="main-frame">
     <textarea id="article" placeholder="Paste your article here..."></textarea>
     <br>
-    <!-- PDF upload -->
     <input type="file" id="pdf-upload" accept=".pdf">
     <div id="pdf-name"></div>
-    <!-- Generate Debate button -->
     <br>
+    <div style="margin: 10px 0;">
+      <label for="debate-mode" style="margin-right: 10px;">Debate Mode:</label>
+      <select id="debate-mode" style="padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.2); backdrop-filter: blur(8px);">
+        <option value="moderate">🎯 Moderate</option>
+        <option value="hardcore">🔥 Hardcore</option>
+        <option value="mild">😊 Mild</option>
+      </select>
+    </div>
     <button id="generate-btn">Generate Debate</button>
   </div>
 
   <!-- Debate Section -->
   <div id="debate-container">
-    <div id="person-left" style="background-image:url('person1.jpg');"></div>
+    <div id="person-left" style="background-image:url('download__5_-removebg-preview.png');"></div>
     <div id="script-box">Debate will appear here...</div>
-    <div id="person-right" style="background-image:url('person2.jpg');"></div>
+    <div id="person-right" style="background-image:url('download__6_-removebg-preview.png');"></div>
   </div>
 
-  <!-- User opinion + toggle -->
+  <!-- User opinion -->
   <div id="user-opinion-container">
     <input type="text" id="user-opinion" placeholder="Share your opinion...">
     <button id="for-against-toggle">For</button>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.102/pdf.min.js"></script>
+  <!-- Debate Controls -->
+  <div id="debate-controls" style="text-align: center; margin-top: 20px; display: none;">
+    <button id="continue-btn">Continue Debate</button>
+    <button id="stop-btn">Stop Debate</button>
+    <button id="back-btn">← Back to Start</button>
+  </div>
+
   <script>
-    const pdfUpload = document.getElementById("pdf-upload");
-    const textarea = document.getElementById("article");
-    const pdfName = document.getElementById("pdf-name");
     const themeToggle = document.getElementById("theme-toggle");
     const body = document.body;
-
     const generateBtn = document.getElementById("generate-btn");
     const mainFrame = document.getElementById("main-frame");
     const debateContainer = document.getElementById("debate-container");
+    const userOpinionContainer = document.getElementById("user-opinion-container");
     const scriptBox = document.getElementById("script-box");
     const forAgainstToggle = document.getElementById("for-against-toggle");
-    const userOpinionContainer = document.getElementById("user-opinion-container");
-    const userOpinion = document.getElementById("user-opinion");
-    let currentSide = "For";
+    const collapseHandle = document.getElementById("collapse-handle");
+    const sidePanel = document.getElementById("side-panel");
+    const debateControls = document.getElementById("debate-controls");
+    const continueBtn = document.getElementById("continue-btn");
+    const stopBtn = document.getElementById("stop-btn");
+    const backBtn = document.getElementById("back-btn");
 
-    // PDF upload logic
-    pdfUpload.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        pdfName.textContent = `Uploaded: ${file.name}`;
-        const fileReader = new FileReader();
-        fileReader.onload = async function() {
-          const typedarray = new Uint8Array(this.result);
-          const pdf = await pdfjsLib.getDocument(typedarray).promise;
-          let textContent = "";
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const text = await page.getTextContent();
-            text.items.forEach(item => {
-              textContent += item.str + " ";
-            });
-            textContent += "\n\n";
-          }
-          textarea.value = textContent;
-        };
-        fileReader.readAsArrayBuffer(file);
-      }
-    });
+    let currentSide = "For";
+    let currentSession = null;
+    let currentRound = 1;
 
     // Theme toggle
     themeToggle.addEventListener("click", () => {
@@ -267,27 +433,304 @@
       }
     });
 
+    // Collapse handle toggle
+    collapseHandle.addEventListener("click", () => {
+      sidePanel.classList.toggle("collapsed");
+      collapseHandle.textContent = sidePanel.classList.contains("collapsed") ? "⮞" : "⮜";
+    });
+
+    // API Functions
+    async function extractPDF(file) {
+      const formData = new FormData();
+      formData.append('pdf', file);
+      
+      try {
+        const response = await fetch('/extract_pdf', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('PDF extraction error:', error);
+        return { error: 'Failed to extract PDF text' };
+      }
+    }
+
+    async function startDebate(article, mode) {
+      try {
+        const response = await fetch('/start_debate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ article, mode })
+        });
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('Start debate error:', error);
+        return { error: 'Failed to start debate' };
+      }
+    }
+
+    async function continueDebate(sessionId, shouldContinue) {
+      try {
+        const response = await fetch('/continue_debate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            session_id: sessionId, 
+            continue: shouldContinue 
+          })
+        });
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('Continue debate error:', error);
+        return { error: 'Failed to continue debate' };
+      }
+    }
+
+    function displayDebateResults(data) {
+      let html = '';
+      
+      if (data.round) {
+        html += `<div class="debate-status">Round ${data.round} | Relevance: ${data.relevance_score || 100}%</div>`;
+      }
+      
+      if (data.for_points) {
+        html += '<div class="debate-section">';
+        html += '<div class="debate-title for-title">🟢 Arguments FOR</div>';
+        html += '<ul class="argument-list">';
+        data.for_points.forEach(point => {
+          html += `<li class="argument-item for-argument">${point}</li>`;
+        });
+        html += '</ul></div>';
+      }
+      
+      if (data.against_points) {
+        html += '<div class="debate-section">';
+        html += '<div class="debate-title against-title">🔴 Arguments AGAINST</div>';
+        html += '<ul class="argument-list">';
+        data.against_points.forEach(point => {
+          html += `<li class="argument-item against-argument">${point}</li>`;
+        });
+        html += '</ul></div>';
+      }
+      
+      if (data.new_for_points || data.new_against_points) {
+        html += '<div class="debate-status">📈 New Arguments Generated</div>';
+        
+        if (data.new_for_points) {
+          html += '<div class="debate-section">';
+          html += '<div class="debate-title for-title">🟢 New FOR Arguments</div>';
+          html += '<ul class="argument-list">';
+          data.new_for_points.forEach(point => {
+            html += `<li class="argument-item for-argument">${point}</li>`;
+          });
+          html += '</ul></div>';
+        }
+        
+        if (data.new_against_points) {
+          html += '<div class="debate-section">';
+          html += '<div class="debate-title against-title">🔴 New AGAINST Arguments</div>';
+          html += '<ul class="argument-list">';
+          data.new_against_points.forEach(point => {
+            html += `<li class="argument-item against-argument">${point}</li>`;
+          });
+          html += '</ul></div>';
+        }
+      }
+      
+      scriptBox.innerHTML = html;
+      scriptBox.scrollTop = scriptBox.scrollHeight;
+    }
+
     // Generate debate
-    generateBtn.addEventListener("click", () => {
-      pdfUpload.style.display = "none";
-      textarea.style.display = "none";
-      pdfName.style.display = "none";
+    generateBtn.addEventListener("click", async () => {
+      const articleText = document.getElementById("article").value.trim();
+      const pdfFile = document.getElementById("pdf-upload").files[0];
+      const mode = document.getElementById("debate-mode").value;
+      
+      let finalText = articleText;
+      
+      // Handle PDF extraction if file is selected
+      if (pdfFile) {
+        scriptBox.innerHTML = '<div class="loading">📄 Extracting text from PDF...</div>';
+        const pdfResult = await extractPDF(pdfFile);
+        
+        if (pdfResult.error) {
+          scriptBox.innerHTML = `<div style="color: red;">❌ ${pdfResult.error}</div>`;
+          return;
+        }
+        
+        finalText = pdfResult.extracted_text;
+      }
+      
+      if (!finalText) {
+        alert('Please enter an article or upload a PDF!');
+        return;
+      }
+      
+      // Show loading
+      scriptBox.innerHTML = '<div class="loading">🤖 Generating debate arguments...</div>';
+      
+      // Hide input elements
+      document.getElementById("pdf-upload").style.display = "none";
+      document.getElementById("article").style.display = "none";
+      document.getElementById("pdf-name").style.display = "none";
+      document.getElementById("debate-mode").style.display = "none";
       generateBtn.style.display = "none";
 
-      mainFrame.classList.add("active");
-
+      // Show debate elements
       debateContainer.style.display = "flex";
       userOpinionContainer.style.display = "flex";
-
-      scriptBox.textContent = `${currentSide} argument will appear here based on the article.`;
+      debateControls.style.display = "block";
+      
+      // Start debate
+      const result = await startDebate(finalText, mode);
+      
+      if (result.error) {
+        scriptBox.innerHTML = `<div style="color: red;">❌ ${result.error}</div>`;
+        return;
+      }
+      
+      // Store session info
+      currentSession = result.session_id;
+      currentRound = result.round;
+      
+      // Display results
+      displayDebateResults(result);
     });
 
     // Toggle For/Against
     forAgainstToggle.addEventListener("click", () => {
       currentSide = currentSide === "For" ? "Against" : "For";
       forAgainstToggle.textContent = currentSide;
-      scriptBox.textContent = `${currentSide} argument will appear here based on the article.`;
+    });
+
+    // Continue debate
+    continueBtn.addEventListener("click", async () => {
+      if (!currentSession) return;
+      
+      scriptBox.innerHTML = '<div class="loading">🔄 Generating new arguments...</div>';
+      
+      const result = await continueDebate(currentSession, true);
+      
+      if (result.error) {
+        scriptBox.innerHTML = `<div style="color: red;">❌ ${result.error}</div>`;
+        return;
+      }
+      
+      if (result.action === "debate_ended_low_relevance") {
+        scriptBox.innerHTML = `
+          <div class="debate-status">🏁 Debate concluded due to low relevance (${result.relevance_score}%)</div>
+          <div style="margin: 10px 0;">The debate has naturally reached its conclusion. All major points have been covered!</div>
+        `;
+        debateControls.style.display = "none";
+        return;
+      }
+      
+      currentRound = result.round;
+      displayDebateResults(result);
+    });
+
+    // Stop debate
+    stopBtn.addEventListener("click", async () => {
+      if (!currentSession) return;
+      
+      const result = await continueDebate(currentSession, false);
+      
+      scriptBox.innerHTML = `
+        <div class="debate-status">🏁 Debate ended by user</div>
+        <div style="margin: 10px 0;">Thanks for exploring different perspectives on this topic!</div>
+        ${result.final_summary ? `
+          <div style="font-size: 12px; margin-top: 10px;">
+            <strong>Summary:</strong> ${result.final_summary.rounds_completed} rounds completed with 
+            ${result.final_summary.total_for_points} FOR and ${result.final_summary.total_against_points} AGAINST arguments.
+          </div>
+        ` : ''}
+      `;
+      
+      debateControls.style.display = "none";
+      currentSession = null;
+    });
+
+    // Back to start
+    backBtn.addEventListener("click", () => {
+      // Reset all elements
+      document.getElementById("pdf-upload").style.display = "block";
+      document.getElementById("article").style.display = "block";
+      document.getElementById("article").value = "";
+      document.getElementById("pdf-name").textContent = "";
+      document.getElementById("pdf-name").style.display = "block";
+      document.getElementById("debate-mode").style.display = "block";
+      generateBtn.style.display = "block";
+      
+      debateContainer.style.display = "none";
+      userOpinionContainer.style.display = "none";
+      debateControls.style.display = "none";
+      
+      scriptBox.innerHTML = "Debate will appear here...";
+      currentSession = null;
+      currentRound = 1;
+    });
+
+    // Show PDF name
+    document.getElementById("pdf-upload").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        document.getElementById("pdf-name").textContent = `Uploaded: ${file.name}`;
+      }
+    });
+
+    // Global/Indian view toggle with background change
+    const viewToggle = document.getElementById("view-toggle");
+    const viewImage = document.getElementById("view-image");
+
+    const indianBG = "WhatsApp Image 2025-09-25 at 13.25.35.jpeg";
+    const globalBG = "WhatsApp Image 2025-09-24 at 17.33.10 (1).jpeg";
+
+    let currentView = "Global";
+    const globeImage = "download__4_-removebg-preview.png";
+    const mapImage = "Mapas_de_muestra_para_India_con_Andaman_y_Nicobar-removebg-preview.png";
+
+    viewImage.src = globeImage;
+    document.body.style.backgroundImage = `url("${globalBG}")`;
+
+    viewToggle.addEventListener("click", () => {
+      if (currentView === "Global") {
+        currentView = "Indian";
+        viewImage.src = mapImage;
+        viewToggle.textContent = "🗺️ Indian";
+        document.body.style.backgroundImage = `url("${indianBG}")`;
+      } else {
+        currentView = "Global";
+        viewImage.src = globeImage;
+        viewToggle.textContent = "🌍 Global";
+        document.body.style.backgroundImage = `url("${globalBG}")`;
+      }
     });
   </script>
+</body>
+</html>
+</template>
+
+<script>
+const flash = document.getElementById('flash');
+
+document.body.addEventListener('click', () => {
+  flash.classList.add('flash-animate');
+
+  setTimeout(() => {
+    const tpl = document.getElementById('second-template');
+    const pageHtml = tpl.innerHTML;
+
+    document.open();
+    document.write(pageHtml);
+    document.close();
+  }, 1000);
+});
+</script>
+
 </body>
 </html>
